@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>SADHIN PANEL - AVIATOR PRO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Chakra+Petch:wght@500;600;700&family=Orbitron:wght@600;700;800;900&family=Share+Tech+Mono&family=Teko:wght@600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    :root {
+      --green: #39ff14;
+      --green2: #00c83c;
+      --lime: #b9ff00;
+      --cyan: #00eaff;
+      --gold: #ffe600;
+      --red: #ff225d;
+      --purple: #bc28ff;
+      --ink: #000603;
+      --panel: #001208;
+      --white: #fff;
+      --flight: 2.25s;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000 !important;
+      color: #fff;
+      font-family: Orbitron, sans-serif;
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* GAME BACKGROUND FRAME */
+    #target-game-frame {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      z-index: 1;
+      display: block;
+    }
+
+    #burstCanvasLayer {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 99995;
+    }
+
+    /* LIVE WIN TOP ACTIVITY CARD */
+    #liveWinLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 99990;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .lw-card {
+      position: absolute;
+      top: 64px;
+      left: 50%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 92vw;
+      padding: 7px 14px 7px 8px;
+      border: 1px solid rgba(57, 255, 20, .62);
+      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(0, 30, 11, .96), rgba(0, 5, 2, .98));
+      box-shadow: 0 10px 25px #000, 0 0 20px rgba(57, 255, 20, .35), inset 0 0 15px rgba(57, 255, 20, .15);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      animation: toastIn .45s cubic-bezier(.2, 1.15, .35, 1.1) forwards, toastOut .35s ease-in 4.15s forwards;
+    }
+
+    @keyframes toastIn {
+      0% { transform: translateX(115%) scale(.85); opacity: 0; }
+      65% { transform: translateX(-52%) scale(1.03); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    }
+
+    @keyframes toastOut {
+      to { transform: translateX(115%) scale(.88); opacity: 0; }
+    }
+
+    .lw-avatar {
+      width: 29px;
+      height: 29px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--green);
+      border-radius: 50%;
+      background: #001208;
+      color: #fff;
+      font: 700 11px Chakra Petch;
+    }
+
+    .lw-text {
+      line-height: 1.16;
+    }
+
+    .lw-label {
+      color: var(--cyan);
+      font-size: 6.8px;
+      font-weight: 900;
+      letter-spacing: .15em;
+    }
+
+    .lw-name {
+      font: 700 11px Chakra Petch;
+    }
+
+    .lw-amt {
+      margin-left: 4px;
+      color: var(--gold);
+      font: 12px Audiowide;
+    }
+
+    /* FLOATING ORB LAUNCHER WITH IMAGE */
+    .launcher {
+      position: fixed;
+      right: 18px;
+      bottom: 120px;
+      width: 58px;
+      height: 58px;
+      z-index: 99999;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      cursor: pointer;
+      touch-action: none;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 12px 28px #000, 0 0 18px rgba(57, 255, 20, .48), inset 0 0 15px rgba(57, 255, 20, .24);
+      animation: orbFloat 3.8s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat {
+      50% { transform: translateY(-7px) rotate(2deg); }
+    }
+
+    .launcher img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* KEY VERIFICATION MODAL */
+    .key-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100005;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+    }
+
+    .key-modal.visible {
+      display: flex;
+    }
+
+    .key-box {
+      width: 280px;
+      padding: 20px;
+      border: 1px solid var(--green);
+      border-radius: 20px;
+      background: linear-gradient(145deg, #001e0a, #000502);
+      box-shadow: 0 0 25px rgba(57, 255, 20, 0.4);
+      text-align: center;
+    }
+
+    .key-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--lime);
+      margin-bottom: 15px;
+      text-shadow: 0 0 8px var(--lime);
+    }
+
+    .key-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--cyan);
+      border-radius: 8px;
+      background: #000;
+      color: #fff;
+      font-family: Orbitron, sans-serif;
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+      margin-bottom: 15px;
+      box-shadow: inset 0 0 8px rgba(0, 234, 255, 0.3);
+    }
+
+    .key-btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--green2), var(--green));
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      box-shadow: 0 0 10px var(--green);
+    }
+
+    .key-error {
+      font-size: 9px;
+      color: var(--red);
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* FLOATING PANEL + WINGS & CLAWS (DRAGGABLE) */
+    .wrap {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      z-index: 100000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(.9);
+      transition: opacity .2s ease, transform .25s cubic-bezier(.2, .9, .2, 1.1);
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .wrap:active {
+      cursor: grabbing;
+    }
+
+    .wrap.visible {
+      display: flex;
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .flight-chassis {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: chassisFloat var(--flight) ease-in-out infinite;
+    }
+
+    @keyframes chassisFloat {
+      50% { transform: translateY(-8px) rotate(-.45deg); }
+    }
+
+    /* WINGS ANIMATION */
+    .wing {
+      position: absolute;
+      top: 48%;
+      width: 220px;
+      height: 165px;
+      z-index: 1;
+      pointer-events: none;
+      background: url('https://i.ibb.co/mF1fS5m2/file-0000000017bc8211a51be6c0e30fe47a.png') center/contain no-repeat;
+    }
+
+    .wing.left {
+      left: -80px;
+      clip-path: polygon(0 0, 66% 0, 66% 100%, 0 100%);
+      transform-origin: right 58%;
+      animation: flapL var(--flight) ease-in-out infinite;
+    }
+
+    .wing.right {
+      right: -80px;
+      clip-path: polygon(34% 0, 100% 0, 100% 100%, 34% 100%);
+      transform-origin: left 58%;
+      animation: flapR var(--flight) ease-in-out infinite;
+    }
+
+    @keyframes flapL {
+      0%, 100% { transform: translateY(-50%) rotate(-12deg) scaleY(.94); }
+      50% { transform: translateY(-50%) rotate(14deg) scaleY(1.06); }
+    }
+
+    @keyframes flapR {
+      0%, 100% { transform: translateY(-50%) rotate(12deg) scaleY(.94); }
+      50% { transform: translateY(-50%) rotate(-14deg) scaleY(1.06); }
+    }
+
+    /* CLAWS ANIMATION */
+    .claw-layer {
+      position: absolute;
+      top: 32px;
+      width: 42px;
+      height: 165px;
+      z-index: 25;
+      pointer-events: none;
+    }
+    .claw-layer.left { left: -20px; }
+    .claw-layer.right { right: -20px; transform: scaleX(-1); }
+    .claw-shake { width: 100%; height: 100%; animation: clawShake 7.5s infinite; }
+
+    @keyframes clawShake {
+      66%, 78% { transform: translate(1.5px, -1px); }
+      68%, 80% { transform: translate(-1.5px, 1px); }
+    }
+
+    /* CARD CONTAINER & PLASMA BORDER */
+    .box-wrapper {
+      position: relative;
+      z-index: 10;
+      width: 228px;
+      height: 290px;
+      display: flex;
+      overflow: hidden;
+      padding: 2px;
+      border-radius: 38px;
+      background: #000;
+      box-shadow: 0 0 30px rgba(57, 255, 20, .38), 0 18px 50px rgba(0, 0, 0, .96);
+    }
+
+    .box-wrapper:before {
+      content: "";
+      position: absolute;
+      left: -75%;
+      top: -75%;
+      width: 250%;
+      height: 250%;
+      z-index: 0;
+      background: conic-gradient(from 0deg, transparent 64%, var(--green) 77%, #fff 82%, var(--cyan) 87%, transparent 100%);
+      animation: plasma 3.8s linear infinite;
+    }
+
+    @keyframes plasma {
+      to { transform: rotate(360deg); }
+    }
+
+    .box {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 36px;
+      padding: 12px;
+      background: radial-gradient(circle at 50% -10%, rgba(0, 83, 30, .72), transparent 53%), linear-gradient(#001208, #000803 57%, #000201);
+    }
+
+    .card-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--lime);
+      text-shadow: 0 0 8px var(--lime);
+      letter-spacing: 1px;
+    }
+
+    /* AVIATOR MULTIPLIER SIGNAL BOX */
+    .signal-box {
+      background: rgba(0, 20, 8, 0.9);
+      border: 1px solid var(--cyan);
+      border-radius: 14px;
+      padding: 14px 5px;
+      text-align: center;
+      box-shadow: inset 0 0 12px rgba(0, 234, 255, 0.3);
+    }
+
+    .signal-label {
+      font-size: 7px;
+      color: var(--cyan);
+      letter-spacing: 1.5px;
+      margin-bottom: 4px;
+      text-shadow: 0 0 5px var(--cyan);
+    }
+
+    #multiplierDisplay {
+      font-family: 'Audiowide', sans-serif;
+      font-size: 26px;
+      color: var(--gold);
+      text-shadow: 0 0 12px var(--gold);
+    }
+
+    /* GET SIGNAL BUTTON */
+    .gen-btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--green2), var(--green));
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      box-shadow: 0 0 12px var(--green);
+      transition: transform 0.1s ease;
+    }
+
+    .gen-btn:active {
+      transform: scale(0.94);
+    }
+
+    .close-link {
+      text-align: center;
+      font-size: 9px;
+      color: var(--red);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Game Background Frame -->
+  <iframe id="target-game-frame" src="https://bdxrafi28.12bajeevip.com/register.html"></iframe>
+
+  <div id="burstCanvasLayer"></div>
+  <div id="liveWinLayer"></div>
+
+  <!-- Launcher Orb with Image -->
+  <div class="launcher" id="launcherOrb">
+    <img src="https://i.ibb.co/WvxHYPr4/IMG-20261108-103945-123.jpg" alt="Launcher Icon">
+  </div>
+
+  <!-- Key Verification Modal -->
+  <div class="key-modal" id="keyModal">
+    <div class="key-box">
+      <div class="key-title">ENTER ACCESS KEY</div>
+      <input type="text" class="key-input" id="keyInput" placeholder="Enter Password...">
+      <button class="key-btn" id="verifyKeyBtn">VERIFY</button>
+      <div class="key-error" id="keyError">ভুল পাসওয়ার্ড! অনুগ্রহ করে সঠিক কি দিন।</div>
+    </div>
+  </div>
+
+  <!-- Floating Panel With Wings & Claws (Draggable) -->
+  <div class="wrap" id="signalPanel">
+    <div class="flight-chassis">
+      <div class="wing left"></div>
+      <div class="wing right"></div>
+
+      <div class="claw-layer left">
+        <div class="claw-shake">
+          <div class="finger f1"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+          <div class="finger f2"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+          <div class="finger f3"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+          <div class="finger f4"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+        </div>
+      </div>
+
+      <div class="claw-layer right">
+        <div class="claw-shake">
+          <div class="finger f1"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+          <div class="finger f2"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+          <div class="finger f3"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+          <div class="finger f4"><div class="f-base"></div><div class="f-mid"></div><div class="f-tip"></div></div>
+        </div>
+      </div>
+
+      <div class="box-wrapper">
+        <div class="box">
+          <div class="card-title">SADHIN VIP</div>
+
+          <!-- Signal Multiplier Generator Area -->
+          <div class="signal-box">
+            <div class="signal-label" id="signalStatusLabel">AVIATOR SIGNAL PREDICTOR</div>
+            <div id="multiplierDisplay">1.00x</div>
+          </div>
+
+          <button class="gen-btn" id="getSignalBtn">GET SADHIN SIGNAL</button>
+
+          <div class="close-link" id="closePanel">Close Panel</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const launcherOrb = document.getElementById('launcherOrb');
+    const keyModal = document.getElementById('keyModal');
+    const verifyKeyBtn = document.getElementById('verifyKeyBtn');
+    const keyInput = document.getElementById('keyInput');
+    const keyError = document.getElementById('keyError');
+    const signalPanel = document.getElementById('signalPanel');
+    const closePanel = document.getElementById('closePanel');
+    const getSignalBtn = document.getElementById('getSignalBtn');
+    const multiplierDisplay = document.getElementById('multiplierDisplay');
+    const signalStatusLabel = document.getElementById('signalStatusLabel');
+
+    // 1. Launcher image click to show Password Modal
+    launcherOrb.addEventListener('click', () => {
+      keyModal.classList.add('visible');
+      keyInput.value = '';
+      keyError.style.display = 'none';
+    });
+
+    // 2. Verify Key (sadhinvip26)
+    verifyKeyBtn.addEventListener('click', () => {
+      let enteredKey = keyInput.value.trim();
+      if (enteredKey === "sadhinvip26") {
+        keyModal.classList.remove('visible');
+        signalPanel.classList.add('visible');
+      } else {
+        keyError.style.display = 'block';
+      }
+    });
+
+    // Enter key support for password input
+    keyInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') verifyKeyBtn.click();
+    });
+
+    closePanel.addEventListener('click', () => {
+      signalPanel.classList.remove('visible');
+    });
+
+    // 3. Aviator Random Multiplier Generator with Loading state
+    getSignalBtn.addEventListener('click', () => {
+      getSignalBtn.disabled = true;
+      multiplierDisplay.style.color = 'var(--cyan)';
+      signalStatusLabel.innerText = "LOADING SIGNAL...";
+      multiplierDisplay.innerText = "...";
+
+      // Simulate loading delay before generating signal
+      setTimeout(() => {
+        signalStatusLabel.innerText = "AVIATOR SIGNAL PREDICTOR";
+        let targetMultiplier = (Math.random() * (18.0 - 1.2) + 1.2).toFixed(2);
+        let currentVal = 1.00;
+        let totalSteps = 24;
+        let stepCount = 0;
+        let increment = (targetMultiplier - currentVal) / totalSteps;
+
+        let jumpTimer = setInterval(() => {
+          stepCount++;
+          currentVal += increment;
+          
+          let displayVal = stepCount === totalSteps ? parseFloat(targetMultiplier) : currentVal + (Math.random() * 0.35 - 0.17);
+          if(displayVal < 1.00) displayVal = 1.00;
+
+          multiplierDisplay.innerText = displayVal.toFixed(2) + 'x';
+
+          if (stepCount >= totalSteps) {
+            clearInterval(jumpTimer);
+            multiplierDisplay.innerText = targetMultiplier + 'x';
+            multiplierDisplay.style.color = 'var(--gold)';
+            getSignalBtn.disabled = false;
+          }
+        }, 50);
+      }, 1200); // 1.2 seconds loading time
+    });
+
+    // 4. Drag & Move Functionality for Full Screen Movement
+    let isDragging = false;
+    let startX, startY, initialX = 0, initialY = 0;
+
+    signalPanel.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      startX = e.clientX - initialX;
+      startY = e.clientY - initialY;
+      signalPanel.setPointerCapture(e.pointerId);
+    });
+
+    signalPanel.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      initialX = e.clientX - startX;
+      initialY = e.clientY - startY;
+      signalPanel.style.transform = `translate(calc(-50% + ${initialX}px), calc(-50% + ${initialY}px)) scale(1)`;
+    });
+
+    signalPanel.addEventListener('pointerup', (e) => {
+      isDragging = false;
+      signalPanel.releasePointerCapture(e.pointerId);
+    });
+
+    // Live Win Simulated Toast Notifications
+    const names = ["Rony_99", "Shanto_77", "Arman_BD", "Joy_VIP", "Rakib_Pro", "Tanvir_X"];
+    function spawnLiveWin() {
+      const layer = document.getElementById('liveWinLayer');
+      if(!layer) return;
+      const card = document.createElement('div');
+      card.className = 'lw-card';
+      const randomName = names[Math.floor(Math.random() * names.length)];
+      const randomAmt = (Math.random() * 4500 + 300).toFixed(0);
+      
+      card.innerHTML = `
+        <div class="lw-avatar"><div class="lw-avatar-fb">${randomName[0]}</div></div>
+        <div class="lw-text">
+          <div class="lw-label">AVIATOR WINNER</div>
+          <span class="lw-name">${randomName} <span class="lw-amt">৳${randomAmt}</span></span>
+        </div>
+      `;
+      layer.appendChild(card);
+      setTimeout(() => card.remove(), 4500);
+    }
+    setInterval(spawnLiveWin, 6000);
+  </script>
+</body>
+
+                                   </html>
